@@ -1,8 +1,8 @@
 import sys
 import os
-from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QTextEdit
-from PyQt6.QtGui import QColor, QFont, QTextCursor
-from PyQt6.QtCore import Qt, pyqtSignal, QObject, QTimer
+from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QTextEdit, QSystemTrayIcon, QMenu
+from PyQt6.QtGui import QColor, QFont, QTextCursor, QIcon, QAction
+from PyQt6.QtCore import Qt, pyqtSignal, QObject, QTimer, QSize
 
 class FloatingOverlay(QWidget):
     # 发送状态切换信号：'listening', 'processing', 'success', 'error'
@@ -80,6 +80,38 @@ class FloatingOverlay(QWidget):
         # 补全：初始化自动隐藏定时器（处理成功后隐藏）
         self.hide_timer = QTimer(self)
         self.hide_timer.timeout.connect(self.hide)
+
+        # 托盘初始化
+        self._setup_tray()
+
+    def _setup_tray(self):
+        self.tray_icon = QSystemTrayIcon(self)
+        icon_path = os.path.join(os.getcwd(), "icon.png")
+        if os.path.exists(icon_path):
+            self.tray_icon.setIcon(QIcon(icon_path))
+        else:
+            # 兜底：画一个简单的
+            pass
+            
+        # 托盘菜单
+        self.tray_menu = QMenu()
+        show_action = QAction("显示主面板", self)
+        show_action.triggered.connect(self.show)
+        
+        hide_action = QAction("隐藏主面板", self)
+        hide_action.triggered.connect(self.hide)
+        
+        quit_action = QAction("退出程序", self)
+        quit_action.triggered.connect(QApplication.instance().quit)
+        
+        self.tray_menu.addAction(show_action)
+        self.tray_menu.addAction(hide_action)
+        self.tray_menu.addSeparator()
+        self.tray_menu.addAction(quit_action)
+        
+        self.tray_icon.setContextMenu(self.tray_menu)
+        self.tray_icon.show()
+        self.tray_icon.setToolTip("Frank Voice Agent - 已就绪")
 
     def _handle_click_copy(self):
         import pyperclip

@@ -33,9 +33,16 @@ def core_voice_pipeline():
         
         overlay.status_signal.emit('listening', "Listening... (按 F4 或等待静音以结束)")
         
-        # 使用增强版录音（带 VAD 或自适应 RMS）
-        from app.audio_handler import record_audio_smart, stop_recording_event
-        wav_file = record_audio_smart(filename="temp.wav", silence_duration=0.8, volume_threshold=None)
+        # 使用 Silero VAD 进行精准录制
+        from app.vad import SileroVAD
+        from app.audio_handler import stop_recording_event, SAMPLE_RATE
+        import scipy.io.wavfile as wav
+        
+        vad = SileroVAD(silence_duration=0.8)
+        audio_data = vad.record_until_silence(stop_event=stop_recording_event)
+        
+        wav_file = "temp.wav"
+        wav.write(wav_file, SAMPLE_RATE, audio_data)
         
         is_recording = False
         if kws_engine:

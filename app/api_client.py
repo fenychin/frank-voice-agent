@@ -11,6 +11,7 @@ import os
 import re
 import time
 import json
+import threading
 import dashscope
 from app.config import DASHSCOPE_API_KEY
 from app.memory_manager import MemoryManager
@@ -159,13 +160,34 @@ def process_voice_pipeline(file_path):
     memory.log_session(raw_text, payload, scene=current_scene, 
                        intent="send" if should_inject else "input")
     
-    # ── Step 6: 展示 & 注入 ──
+    # ── Step 6: 场景化路由 (Text vs TTS) ──
+    scene_cfg = memory.get_scene_config(current_scene)
+    out_mode = scene_cfg.get("output_mode", "text_inject")
+    
     _notify('final', payload)
     
-    if should_inject and payload and not payload.startswith("("):
-        _execute_injection(payload)
-        LAST_CONTENT_BUFFER = ""
+    # 根据场景执行动作
+    if current_scene == "office":
+        # 办公：仅文字注入 (且非纯发送指令时)
+        if should_inject and payload and not payload.startswith("("):
+            _execute_injection(payload)
+            LAST_CONTENT_BUFFER = ""
     
+    elif current_scene == "running":
+        # 跑步：文字展示 + TTS 回读
+        from app.tts_handler import speak
+        threading.Thread(target=speak, args=(payload,), daemon=True).start()
+        if should_inject and payload and not payload.startswith("("):
+            _execute_injection(payload)
+            LAST_CONTENT_BUFFER = ""
+            
+    elif current_scene == "driving":
+        # 驾驶：仅 TTS，不干扰屏幕输入
+        from app.tts_handler import speak
+        threading.Thread(target=speak, args=(payload,), daemon=True).start()
+        # 驾驶模式下不自动注入文字到窗口，保持安全
+        LAST_CONTENT_BUFFER = ""
+
     t_total = time.time() - t_start
     print(f"[Pipeline] 总耗时: {t_total:.2f}s (目标 <3s)")
     

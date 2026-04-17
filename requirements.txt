@@ -2,17 +2,25 @@
 sounddevice
 numpy
 scipy
+soundfile
 
 # Local STT (免费离线)
 faster-whisper
 
 # Wake Word (KWS)
-sherpa-onnx
+sherpa_onnx
 
 # Hotkey
 keyboard
 
-# Injection
+# TTS & Playback
+edge-tts
+pygame
+
+# UI & Tray
+Pillow
+
+# System Control & Injection
 pyperclip
 
 # Env
@@ -23,8 +31,3 @@ dashscope
 
 # Vector Memory (长期记忆)
 chromadb
-
-# KWS Token Tools (可选)
-click
-pypinyin
-sentencepiece
