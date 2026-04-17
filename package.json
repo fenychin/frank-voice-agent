@@ -1,0 +1,14 @@
+{
+  "name": "frank-voice-agent",
+  "version": "1.0.0",
+  "description": "Frank Personal Voice Agent - Phase 1 MVP",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.wav
+.env
+temp_sherpa/
+models/*.tar.bz2
+gen_keywords.py
+# models/ 文件夹可以保留，因为 30MB 对 GitHub 来说压力不大，方便别人拉取即用
+# 但建议把 temp.wav 等中间产生的文件屏蔽掉
+*.pyc
+.ipynb_checkpoints/

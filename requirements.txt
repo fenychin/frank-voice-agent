@@ -1,0 +1,22 @@
+# Audio & Speech
+sounddevice
+numpy
+scipy
+soundfile
+
+# Trigger & Hotkey
+pvporcupine
+keyboard
+
+# System Control & Injection
+pyperclip
+PyAutoGUI
+
+# Env
+python-dotenv
+
+# HTTP Requests & APIs (Cloud Services)
+requests
+httpx
+openai
+dashscope

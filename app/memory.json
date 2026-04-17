@@ -1,0 +1,13 @@
+{
+  "user_profile": {
+    "name": "Frank",
+    "language_preference": "中文为主，专有名词带英文",
+    "common_terms": [
+      "OpenClaw",
+      "MCP",
+      "RAG",
+      "PyQt6"
+    ],
+    "output_style": "极为简洁，没有任何啰嗦的礼貌用语"
+  }
+}
