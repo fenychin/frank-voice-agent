@@ -1,26 +1,30 @@
-# Audio & Speech
+# Core Audio
 sounddevice
 numpy
 scipy
-soundfile
+
+# Local STT (免费离线)
+faster-whisper
 
 # Wake Word (KWS)
 sherpa-onnx
 
-# Trigger & Hotkey
+# Hotkey
 keyboard
 
-# System Control & Injection
+# Injection
 pyperclip
 
 # Env
 python-dotenv
 
-# Cloud APIs
-requests
+# Cloud LLM (备用/精炼)
 dashscope
 
-# KWS Token Tools (optional)
+# Vector Memory (长期记忆)
+chromadb
+
+# KWS Token Tools (可选)
 click
 pypinyin
 sentencepiece

@@ -1,13 +1,30 @@
 {
   "user_profile": {
     "name": "Frank",
+    "occupation": "",
     "language_preference": "中文为主，专有名词带英文",
-    "common_terms": [
-      "OpenClaw",
-      "MCP",
-      "RAG",
-      "PyQt6"
-    ],
+    "common_terms": ["OpenClaw", "MCP", "RAG", "PyQt6", "Agent"],
+    "disliked_phrases": ["我认为", "首先"],
     "output_style": "极为简洁，没有任何啰嗦的礼貌用语"
-  }
+  },
+  "scene_configs": {
+    "office": {
+      "output_mode": "text_inject",
+      "formality": "professional",
+      "max_length": 500
+    },
+    "running": {
+      "output_mode": "tts_response",
+      "response_length": "short",
+      "max_length": 80
+    },
+    "driving": {
+      "output_mode": "tts_only",
+      "response_length": "minimal",
+      "max_length": 40
+    }
+  },
+  "session_log": [],
+  "facts": [],
+  "rolling_context": []
 }
