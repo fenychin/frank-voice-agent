@@ -4,19 +4,23 @@ numpy
 scipy
 soundfile
 
+# Wake Word (KWS)
+sherpa-onnx
+
 # Trigger & Hotkey
-pvporcupine
 keyboard
 
 # System Control & Injection
 pyperclip
-PyAutoGUI
 
 # Env
 python-dotenv
 
-# HTTP Requests & APIs (Cloud Services)
+# Cloud APIs
 requests
-httpx
-openai
 dashscope
+
+# KWS Token Tools (optional)
+click
+pypinyin
+sentencepiece

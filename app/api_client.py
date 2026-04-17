@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import requests
 from app.config import DASHSCOPE_API_KEY
 import dashscope
@@ -18,7 +19,7 @@ def process_voice_pipeline(file_path):
     
     try:
         # 直接使用大模型多模态能力，极其稳定。并且原生提供对 file:// 本机的临时 OSS 上传缓冲！
-        import json
+        import json as _json  # 避免遮蔽顶部 import
         memory_str = ""
         try:
             memory_file = os.path.join(os.path.dirname(__file__), 'memory.json')
@@ -61,7 +62,6 @@ def process_voice_pipeline(file_path):
                   ON_TEXT_UPDATE('raw', f"【已抓取话音，校对精炼中】：\n{final_text}")
              
              # 再次清洗掉可能遗留的大模型废话
-             import re
              if final_text.startswith("好的"):
                  final_text = final_text.split("好的", 1)[-1].lstrip('，。：,.: ')
                  if final_text.startswith("我明白了"):
@@ -108,8 +108,6 @@ def process_voice_pipeline(file_path):
                       # 执行闭环注入
                       import pyperclip, keyboard, time
                       pyperclip.copy(payload_text)
-                      keyboard.release('alt')
-                      keyboard.release('space')
                       time.sleep(0.2) 
                       keyboard.press_and_release('ctrl+v')
                       time.sleep(0.1)

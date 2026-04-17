@@ -94,6 +94,13 @@ def record_audio_smart(filename="temp.wav", silence_duration=0.8, volume_thresho
                     break
 
     print("\n[Audio] 检测到说话完毕，停止录音。")
+    
+    if not audio_data:
+        print("[Audio] 未采集到有效音频数据。")
+        # 写入空白 wav 文件以避免下游报错
+        wav.write(filename, SAMPLE_RATE, np.zeros(SAMPLE_RATE, dtype=np.int16))
+        return filename
+    
     final_audio = np.concatenate(audio_data, axis=0)
     
     # 应用带通滤波，让音色更纯净

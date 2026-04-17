@@ -43,8 +43,10 @@ def core_voice_pipeline():
         else:
             overlay.status_signal.emit('idle', "WAITING FOR VOICE...")
     except Exception as e:
+        print(f"[Error] core_voice_pipeline 异常: {e}")
         overlay.status_signal.emit('idle', "WAITING FOR VOICE...")
         is_recording = False
+        if kws_engine: kws_engine.toggle_pause(False)
 
 def on_hotkey_triggered():
     global is_recording

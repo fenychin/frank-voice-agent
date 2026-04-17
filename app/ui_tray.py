@@ -116,9 +116,10 @@ class FloatingOverlay(QWidget):
         if state == 'listening':
              self.text_box.clear()
              self.text_box.setPlaceholderText("RECORDING...")
-             self.current_color = "rgba(10, 30, 60, 0.9)" # 录音状态微蓝
-             
-        if state == 'success':
+             self.current_color = "rgba(10, 30, 60, 0.9)"
+        elif state == 'processing':
+             self.current_color = "rgba(40, 30, 10, 0.9)" # 处理中状态微橙
+        elif state == 'success':
              self.current_color = "rgba(10, 50, 10, 0.9)" # 成功状态微绿
              self.hide_timer.start(8000)
              
@@ -129,6 +130,8 @@ class FloatingOverlay(QWidget):
         self._update_stylesheet()
         
         if state == 'idle':
+            self.current_color = "rgba(10, 10, 10, 0.85)" # 恢复默认色
+            self._update_stylesheet()
             self.hide()
         else:
             self.show()
