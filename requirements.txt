@@ -1,36 +1,36 @@
 # Core Audio
-sounddevice
-numpy
-scipy
-soundfile
+sounddevice>=0.14.0
+numpy>=1.24.0
+scipy>=1.11.0
+soundfile>=0.12.0
 
 # Local STT (免费离线)
-faster-whisper
+faster-whisper>=1.0.0
 
 # Wake Word (KWS)
-sherpa_onnx
+sherpa_onnx>=1.10.0
 
 # Hotkey
-keyboard
+keyboard>=0.13.0
 
 # TTS & Playback
-edge-tts
-pygame
+edge-tts>=6.1.0
+pygame>=2.5.0
 
 # UI & Tray
-Pillow
+Pillow>=10.0.0
 
 # System Control & Injection
-pyperclip
+pyperclip>=1.8.0
 
 # HTTP Client
-requests
+requests>=2.31.0
 
 # Env
-python-dotenv
+python-dotenv>=1.0.0
 
 # Cloud LLM
-dashscope
+dashscope>=1.20.0
 
 # Vector Memory (长期记忆)
-chromadb
+chromadb>=0.4.0

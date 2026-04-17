@@ -123,10 +123,11 @@ def main():
     app.api_client.ON_TEXT_UPDATE = on_api_text_callback
     
     # 预热 STT 模型（后台线程，不阻塞 UI）
+    # 必须与 api_client.py 中的推理模型一致
     def warmup_stt():
         try:
             from app.stt import get_model
-            get_model("base")
+            get_model("large-v3-turbo")
         except Exception as e:
             print(f"[System] STT 预热失败: {e}")
     threading.Thread(target=warmup_stt, daemon=True).start()

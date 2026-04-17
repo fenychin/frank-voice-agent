@@ -120,7 +120,7 @@ async function callMiniMaxLLM(text, context = []) {
   const messages = [
     {
       role: 'system',
-      content: `你是 Frank 的私人语音助手，名叫小Ops。
+      content: `你是 Frank 的私人语音助手，名叫小V。
 说话简洁、口语化、亲切
 理解 Frank 的表达习惯（口语化、跳跃式思维）
 场景感知：若Frank提到"开会"、"跑步"、"开车"，自动适配表达风格
@@ -305,7 +305,7 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         status: 'ok',
-        version: '1.1.0',
+        version: '1.2.0',
         security: {
           maxJsonBody: `${MAX_JSON_BODY / 1024}KB`,
           maxAudioBody: `${MAX_AUDIO_BODY / 1024 / 1024}MB`,
