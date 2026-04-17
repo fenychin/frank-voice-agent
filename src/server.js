@@ -22,11 +22,12 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Bo
 
 // ── 环境变量校验 ──────────────────────────────────────────
 const CONFIG = {
-  DASHSCOPE_API_KEY: process.env.DASHSCOPE_API_KEY || '',
-  MINIMAX_API_KEY:   process.env.MINIMAX_API_KEY   || '',
-  MINIMAX_VOICE_ID:  process.env.MINIMAX_VOICE_ID  || 'male-shaun',
-  OPENAI_API_KEY:    process.env.OPENAI_API_KEY    || '',
-  SERVER_URL:        process.env.SERVER_URL         || `http://localhost:${PORT}`,
+  DASHSCOPE_API_KEY:   process.env.DASHSCOPE_API_KEY   || '',
+  DASHSCOPE_TTS_MODEL: process.env.DASHSCOPE_TTS_MODEL || 'qwen-tts-flash', // Qwen3-TTS-Flash
+  MINIMAX_API_KEY:     process.env.MINIMAX_API_KEY     || '',
+  MINIMAX_LLM_MODEL:   process.env.MINIMAX_LLM_MODEL   || 'MiniMax-M2.7-highspeed',
+  MINIMAX_VOICE_ID:    process.env.MINIMAX_VOICE_ID    || 'male-shaun',
+  SERVER_URL:          process.env.SERVER_URL           || `http://localhost:${PORT}`,
 };
 
 function validateEnv() {
@@ -38,9 +39,8 @@ function validateEnv() {
     console.warn(`\n⚠️  [启动警告] 以下核心 API Key 未配置，相关功能将不可用：`);
     missing.forEach(k => console.warn(`   - ${k}`));
     console.warn('   请通过 .env 文件或环境变量设置后重启。\n');
-  }
-  if (!CONFIG.OPENAI_API_KEY) {
-    console.info('ℹ️  [提示] OPENAI_API_KEY 未配置，Whisper STT 降级不可用（可选）。');
+  } else {
+    console.info('\nℹ️  [云端MVP模式] LLM=MiniMax-M2.7-highspeed, TTS=Qwen3-TTS-Flash, STT=本地faster-whisper\n');
   }
 }
 
@@ -115,7 +115,8 @@ function setCorsHeaders(req, res) {
 
 // ── 业务逻辑 ──────────────────────────────────────────────
 
-async function callDashScope(text, context = []) {
+// MiniMax-M2.7-highspeed LLM 调用
+async function callMiniMaxLLM(text, context = []) {
   const messages = [
     {
       role: 'system',
@@ -128,73 +129,68 @@ async function callDashScope(text, context = []) {
     ...context,
     { role: 'user', content: text }
   ];
-  const response = await fetchWithTimeout('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${CONFIG.DASHSCOPE_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'qwen3.5-flash',
-      messages,
-      max_tokens: 500,
-      temperature: 0.7,
-    })
-  });
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`DashScope API error: ${response.status} - ${err}`);
-  }
-  const data = await response.json();
-  return data.choices[0].message.content;
-}
-
-async function callMiniMaxTTS(text) {
-  const response = await fetchWithTimeout('https://api.minimaxi.com/v1/t2a_v2', {
+  
+  const response = await fetchWithTimeout('https://api.minimaxi.com/v1/text/chatcompletion_v2', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${CONFIG.MINIMAX_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'speech-2.8-turbo',
-      text,
-      voice_setting: {
-        voice_id: CONFIG.MINIMAX_VOICE_ID,
+      model: CONFIG.MINIMAX_LLM_MODEL, // MiniMax-M2.7-highspeed
+      messages,
+      max_tokens: 500,
+      temperature: 0.7,
+    })
+  });
+  
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`MiniMax LLM API error: ${response.status} - ${err}`);
+  }
+  
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+// Qwen3-TTS-Flash via DashScope
+async function callQwenTTS(text) {
+  const response = await fetchWithTimeout('https://dashscope.aliyuncs.com/api/v1/services/aigc/text2audio', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${CONFIG.DASHSCOPE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'qwen-tts-flash', // Qwen3-TTS-Flash
+      input: { text },
+      parameters: {
+        voice: 'longxia', // 中文女声，可选 longxia(longzhong), male-qn
         speed: 1.0,
         volume: 1.0,
-        pitch: 0
-      },
-      audio_setting: {
-        audio_format: 'mp3',
+        pitch: 0,
+        output_format: 'mp3',
         sample_rate: 32000,
-        bitrate: 128000
       }
     })
   });
+  
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`MiniMax TTS API error: ${response.status} - ${err}`);
+    throw new Error(`Qwen TTS API error: ${response.status} - ${err}`);
   }
-  return await response.arrayBuffer();
-}
-
-async function transcribeWithWhisper(audioBuffer) {
-  const formData = new FormData();
-  const blob = new Blob([audioBuffer], { type: 'audio/webm' });
-  formData.append('file', blob, 'audio.webm');
-  formData.append('model', 'whisper-1');
-  formData.append('language', 'zh');
-  const response = await fetchWithTimeout('https://api.openai.com/v1/audio/transcriptions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${CONFIG.OPENAI_API_KEY}`,
-    },
-    body: formData
-  });
-  if (!response.ok) throw new Error(`Whisper API error: ${response.status}`);
+  
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('audio')) {
+    return await response.arrayBuffer();
+  }
+  
   const data = await response.json();
-  return data.text;
+  if (data.audio_url) {
+    const audioRes = await fetchWithTimeout(data.audio_url);
+    return await audioRes.arrayBuffer();
+  }
+  throw new Error('Qwen TTS 无音频返回');
 }
 
 // ── 静态文件 MIME ─────────────────────────────────────────
@@ -247,31 +243,29 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ error: 'text is required' }));
         return;
       }
-      const reply = await callDashScope(text, history);
+      const reply = await callMiniMaxLLM(text, history);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ reply }));
       return;
     }
 
-    // ── /api/voice（语音对话）──
+    // ── /api/voice（语音对话 - STT由本地Python处理）──
+    // 接收已转录的文字，调用LLM + TTS返回音频
     if (pathname === '/api/voice' && req.method === 'POST') {
-      const rawBody = await readBody(req, MAX_AUDIO_BODY);
-      const contentType = req.headers['content-type'] || '';
-
-      let userText;
-      if (contentType.includes('application/json')) {
-        const { text, history = [] } = JSON.parse(rawBody.toString('utf-8'));
-        userText = text;
-      } else {
-        userText = await transcribeWithWhisper(rawBody);
+      const rawBody = await readBody(req, MAX_JSON_BODY);
+      const { text } = JSON.parse(rawBody.toString('utf-8'));
+      
+      if (!text) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'text is required' }));
+        return;
       }
 
-      console.log(`[voice] user: ${userText}`);
-      const reply = await callDashScope(userText);
+      console.log(`[voice] user: ${text}`);
+      const reply = await callMiniMaxLLM(text);
       console.log(`[voice] ops: ${reply}`);
-      const mp3Buffer = await callMiniMaxTTS(reply);
+      const audioBuffer = await callQwenTTS(reply);
 
-      // X-Reply-Text 安全编码：确保客户端能正确解码
       let encodedReply;
       try {
         encodedReply = encodeURIComponent(reply);
@@ -281,10 +275,10 @@ const server = http.createServer(async (req, res) => {
 
       res.writeHead(200, {
         'Content-Type': 'audio/mpeg',
-        'Content-Length': mp3Buffer.byteLength,
+        'Content-Length': audioBuffer.byteLength,
         'X-Reply-Text': encodedReply,
       });
-      Readable.from(Buffer.from(mp3Buffer)).pipe(res);
+      Readable.from(Buffer.from(audioBuffer)).pipe(res);
       return;
     }
 
@@ -297,12 +291,12 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ error: 'text is required' }));
         return;
       }
-      const mp3Buffer = await callMiniMaxTTS(text);
+      const audioBuffer = await callQwenTTS(text);
       res.writeHead(200, {
         'Content-Type': 'audio/mpeg',
-        'Content-Length': mp3Buffer.byteLength,
+        'Content-Length': audioBuffer.byteLength,
       });
-      Readable.from(Buffer.from(mp3Buffer)).pipe(res);
+      Readable.from(Buffer.from(audioBuffer)).pipe(res);
       return;
     }
 
@@ -365,8 +359,13 @@ validateEnv();
 
 server.listen(PORT, () => {
   console.log(`
-  Frank Voice Agent - Phase 1 MVP (Hardened)
+  Frank Voice Agent - Phase 1 MVP (Cloud-First)
   Server running at http://localhost:${PORT}
+
+  Architecture:
+    STT : Local (faster-whisper-large-v3-turbo)
+    LLM : MiniMax-M2.7-highspeed (cloud)
+    TTS : Qwen3-TTS-Flash (cloud via DashScope)
 
   Security Config:
     JSON  body limit : ${MAX_JSON_BODY / 1024} KB
@@ -377,6 +376,5 @@ server.listen(PORT, () => {
   API Keys:
     DashScope : ${CONFIG.DASHSCOPE_API_KEY ? 'OK' : 'MISSING'}
     MiniMax   : ${CONFIG.MINIMAX_API_KEY ? 'OK' : 'MISSING'}
-    Whisper   : ${CONFIG.OPENAI_API_KEY ? 'OK' : 'optional, not set'}
   `);
 });
