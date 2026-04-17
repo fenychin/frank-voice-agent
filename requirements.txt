@@ -23,10 +23,13 @@ Pillow
 # System Control & Injection
 pyperclip
 
+# HTTP Client
+requests
+
 # Env
 python-dotenv
 
-# Cloud LLM (备用/精炼)
+# Cloud LLM
 dashscope
 
 # Vector Memory (长期记忆)
